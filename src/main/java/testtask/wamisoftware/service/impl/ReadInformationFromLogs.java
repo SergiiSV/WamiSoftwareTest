@@ -10,6 +10,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import testtask.wamisoftware.model.Participant;
@@ -21,6 +22,7 @@ public class ReadInformationFromLogs implements ReadInformationService {
             "src/main/resources/dataFiles/tag_read_start.log";
     private static final String FINISH_DATA_FILE_NAME =
             "src/main/resources/dataFiles/tag_reads_finish.log";
+    private static final String FINISH_TIME_ZONE = "Europe/Kiev";
     private static final int TAG_STARTS = 4;
     private static final int TAG_ENDS = 16;
     private static final int TIMESTAMP_STARTS = 20;
@@ -33,9 +35,16 @@ public class ReadInformationFromLogs implements ReadInformationService {
         return finishData.entrySet().stream()
                 .filter(e -> startData.containsKey(e.getKey()))
                 .map(e -> {
-                    return new Participant(e.getKey(), startData.get(e.getKey()), e.getValue(),
-                            Duration.between(startData.get(e.getKey()), e.getValue()).toSeconds());
+                    String key = e.getKey();
+                    LocalDateTime startTime = startData.get(key);
+                    LocalDateTime finishTime = e.getValue();
+                    return new Participant(key, startTime, finishTime,
+                            Duration.between(startTime, finishTime).toSeconds()
+                                    - finishTime
+                                    .atZone(TimeZone.getTimeZone(FINISH_TIME_ZONE).toZoneId())
+                                    .getOffset().getTotalSeconds());
                 })
+                .filter(p -> p.getDuration() > 0)
                 .sorted()
                 .limit(10)
                 .collect(Collectors.toList());

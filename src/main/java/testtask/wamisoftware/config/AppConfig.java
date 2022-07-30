@@ -7,6 +7,5 @@ import org.springframework.context.annotation.Configuration;
 @ComponentScan(basePackages = {
         "testtask.wamisoftware"
 })
-
 public class AppConfig {
 }
