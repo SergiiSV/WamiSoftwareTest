@@ -7,6 +7,6 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 @EnableWebMvc
-@ComponentScan(basePackages = {"wamisoftware.controller"})
+@ComponentScan(basePackages = {"testtask.wamisoftware.controller"})
 public class WebConfig implements WebMvcConfigurer {
 }
