@@ -12,26 +12,28 @@ import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import testtask.wamisoftware.model.Participant;
 import testtask.wamisoftware.service.ReadInformationService;
 
 @Service
 public class ReadInformationFromLogs implements ReadInformationService {
-    private static final String START_DATA_FILE_NAME =
-            "src/main/resources/dataFiles/tag_read_start.log";
-    private static final String FINISH_DATA_FILE_NAME =
-            "src/main/resources/dataFiles/tag_reads_finish.log";
-    private static final String FINISH_TIME_ZONE = "Europe/Kiev";
     private static final int TAG_STARTS = 4;
     private static final int TAG_ENDS = 16;
     private static final int TIMESTAMP_STARTS = 20;
     private static final int TIMESTAMP_ENDS = 32;
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyMMddHHmmss");
+    @Value("${start.file.name}")
+    private String startDataFileName;
+    @Value("${finish.file.name}")
+    private String finishDataFileName;
+    @Value("${finish.time.zone}")
+    private String finishTimeZone;
 
     public List<Participant> getParticipantData() {
-        Map<String, LocalDateTime> startData = getStatisticFromStartData(START_DATA_FILE_NAME);
-        Map<String, LocalDateTime> finishData = getStatisticFromFinishData(FINISH_DATA_FILE_NAME);
+        Map<String, LocalDateTime> startData = getStatisticFromStartData();
+        Map<String, LocalDateTime> finishData = getStatisticFromFinishData();
         return finishData.entrySet().stream()
                 .filter(e -> startData.containsKey(e.getKey()))
                 .map(e -> {
@@ -41,7 +43,7 @@ public class ReadInformationFromLogs implements ReadInformationService {
                     return new Participant(key, startTime, finishTime,
                             Duration.between(startTime, finishTime).toSeconds()
                                     - finishTime
-                                    .atZone(TimeZone.getTimeZone(FINISH_TIME_ZONE).toZoneId())
+                                    .atZone(TimeZone.getTimeZone(finishTimeZone).toZoneId())
                                     .getOffset().getTotalSeconds());
                 })
                 .filter(p -> p.getDuration() > 0)
@@ -50,9 +52,9 @@ public class ReadInformationFromLogs implements ReadInformationService {
                 .collect(Collectors.toList());
     }
 
-    private Map<String, LocalDateTime> getStatisticFromStartData(String fromStartFileName) {
+    private Map<String, LocalDateTime> getStatisticFromStartData() {
         Map<String, LocalDateTime> startData = new HashMap<>();
-        String data = getDataFromFile(fromStartFileName);
+        String data = getDataFromFile(startDataFileName);
         String[] dividedData = data.split(System.lineSeparator());
         for (String participantData : dividedData) {
             String tagName = participantData.substring(TAG_STARTS, TAG_ENDS);
@@ -64,9 +66,9 @@ public class ReadInformationFromLogs implements ReadInformationService {
         return startData;
     }
 
-    private Map<String, LocalDateTime> getStatisticFromFinishData(String fromFinishFileName) {
+    private Map<String, LocalDateTime> getStatisticFromFinishData() {
         Map<String, LocalDateTime> finishData = new HashMap<>();
-        String data = getDataFromFile(fromFinishFileName);
+        String data = getDataFromFile(finishDataFileName);
         String[] dividedData = data.split(System.lineSeparator());
         for (String participantData : dividedData) {
             finishData.put(participantData.substring(TAG_STARTS, TAG_ENDS),
